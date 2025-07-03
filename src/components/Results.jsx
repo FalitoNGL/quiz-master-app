@@ -6,8 +6,8 @@ import styled from 'styled-components';
 import { useAnimatedCounter } from '../hooks/useAnimatedCounter';
 import { AuroraCard } from './ui/AuroraCard';
 import { Button } from './ui/Button';
+import { playSound } from '../utils/audioManager';
 
-// Styled Components
 const ResultsContent = styled.div`
   text-align: center;
   display: flex;
@@ -25,9 +25,10 @@ const Message = styled.p`
   font-size: 1.25rem;
   color: ${({ theme }) => theme.textSecondary};
   margin-bottom: 2rem;
+  text-transform: capitalize;
 `;
 
-const ScoreDisplay = styled.div`
+const ScoreDisplay = styled(motion.div)`
   font-size: 5rem;
   font-weight: bold;
   color: ${({ theme }) => theme.accent};
@@ -50,33 +51,22 @@ const HighScoreText = styled.p`
   margin-bottom: 2.5rem;
 `;
 
-const NewHighScore = styled.p`
+const NewHighScore = styled(motion.p)`
   color: ${({ theme }) => theme.accent};
   font-weight: bold;
-  animation: pulse 1.5s infinite;
   margin-bottom: 2.5rem;
-  font-size: 1.1rem;
-
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-  }
+  font-size: 1.2rem;
 `;
 
-const Results = ({ score, totalQuestions, onRestart, highScore, gameMode }) => {
+const Results = ({ score, totalQuestions, onRestart, highScore, gameMode, isPracticeMode }) => {
   const [animatedScore, setAnimatedScore] = useState(0);
-
-  // Menggunakan hook untuk animasi angka
   useAnimatedCounter(score, setAnimatedScore);
 
-  // Efek untuk memainkan suara saat komponen muncul
   useEffect(() => {
-    const finishSound = new Audio('/sounds/finish.mp3');
-    finishSound.play();
+    playSound('finish');
   }, []);
 
-  const isNewHighScore = score > 0 && score >= highScore;
+  const isNewHighScore = !isPracticeMode && score > 0 && score >= highScore;
 
   return (
     <AuroraCard
@@ -85,17 +75,25 @@ const Results = ({ score, totalQuestions, onRestart, highScore, gameMode }) => {
       transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
     >
       <ResultsContent>
-        <Title>🎉 Kuis Selesai! 🎉</Title>
-        <Message>Mode: {gameMode === 'klasik' ? 'Klasik' : (gameMode === 'time_attack' ? 'Time Attack' : 'Latihan Personal')}</Message>
+        <Title>🎉 {isPracticeMode ? 'Latihan Selesai!' : 'Kuis Selesai!'} 🎉</Title>
+        <Message>Mode: {gameMode.replace('_', ' ')}</Message>
         
         <ScoreDisplay>{animatedScore}</ScoreDisplay>
         
         <FinalScore>Anda menjawab {score / 10} dari <span>{totalQuestions}</span> soal dengan benar.</FinalScore>
         
-        {isNewHighScore ? (
-          <NewHighScore>🏆 Rekor Baru! 🏆</NewHighScore>
-        ) : (
-          <HighScoreText>Skor Tertinggi: {highScore}</HighScoreText>
+        {!isPracticeMode && (
+          isNewHighScore ? (
+            <NewHighScore
+              initial={{ scale: 0.5, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
+            >
+              🏆 Rekor Baru! 🏆
+            </NewHighScore>
+          ) : (
+            <HighScoreText>Skor Tertinggi: {highScore}</HighScoreText>
+          )
         )}
 
         <Button onClick={onRestart}>Kembali ke Menu</Button>

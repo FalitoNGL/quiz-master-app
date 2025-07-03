@@ -1,4 +1,6 @@
-import { useState } from 'react';
+// src/App.jsx
+
+import { useState, useCallback } from 'react'; // Import useCallback
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { UserProgressProvider, useUserProgress } from './context/UserProgressContext';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
@@ -13,29 +15,13 @@ import ParticleBackground from './components/ui/ParticleBackground';
 export const themes = {
   ocean: {
     name: 'Samudra',
-    light: {
-      bg: '#f0f9ff', cardBg: 'rgba(255, 255, 255, 0.7)', text: '#082f49',
-      textSecondary: '#475569', accent: '#0ea5e9', buttonText: '#ffffff',
-      glow: 'rgba(14, 165, 233, 0.3)', borderRadius: '24px',
-    },
-    dark: {
-      bg: '#0a192f', cardBg: 'rgba(17, 34, 64, 0.75)', text: '#ccd6f6',
-      textSecondary: '#8892b0', accent: '#64ffda', buttonText: '#0a192f',
-      glow: 'rgba(100, 255, 218, 0.3)', borderRadius: '24px',
-    }
+    light: { bg: '#f0f9ff', cardBg: 'rgba(255, 255, 255, 0.7)', text: '#082f49', textSecondary: '#475569', accent: '#0ea5e9', buttonText: '#ffffff', glow: 'rgba(14, 165, 233, 0.3)', borderRadius: '24px', },
+    dark: { bg: '#0a192f', cardBg: 'rgba(17, 34, 64, 0.75)', text: '#ccd6f6', textSecondary: '#8892b0', accent: '#64ffda', buttonText: '#0a192f', glow: 'rgba(100, 255, 218, 0.3)', borderRadius: '24px', }
   },
   sunset: {
     name: 'Matahari Terbenam',
-    light: {
-      bg: '#fff7ed', cardBg: 'rgba(255, 255, 255, 0.7)', text: '#431407',
-      textSecondary: '#7c2d12', accent: '#f97316', buttonText: '#ffffff',
-      glow: 'rgba(249, 115, 22, 0.3)', borderRadius: '24px',
-    },
-    dark: {
-      bg: '#231a43', cardBg: 'rgba(49, 38, 89, 0.75)', text: '#e0cde7',
-      textSecondary: '#9e8fb0', accent: '#ff8a71', buttonText: '#ffffff',
-      glow: 'rgba(255, 138, 113, 0.3)', borderRadius: '24px',
-    }
+    light: { bg: '#fff7ed', cardBg: 'rgba(255, 255, 255, 0.7)', text: '#431407', textSecondary: '#7c2d12', accent: '#f97316', buttonText: '#ffffff', glow: 'rgba(249, 115, 22, 0.3)', borderRadius: '24px', },
+    dark: { bg: '#231a43', cardBg: 'rgba(49, 38, 89, 0.75)', text: '#e0cde7', textSecondary: '#9e8fb0', accent: '#ff8a71', buttonText: '#ffffff', glow: 'rgba(255, 138, 113, 0.3)', borderRadius: '24px', }
   }
 };
 
@@ -78,10 +64,18 @@ const AppRouter = () => {
   const [currentPage, setCurrentPage] = useState('menu');
   const [quizConfig, setQuizConfig] = useState(null);
 
-  const startQuiz = (categoryId, mode) => {
+  const handleNavigate = useCallback((page) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handleStartQuiz = useCallback((categoryId, mode) => {
     setQuizConfig({ categoryId, mode });
     setCurrentPage('quiz');
-  };
+  }, []);
+
+  const handleQuizEnd = useCallback(() => {
+    setCurrentPage('menu');
+  }, []);
   
   const pageVariants = {
     initial: { opacity: 0, y: 30, scale: 0.98 },
@@ -89,28 +83,29 @@ const AppRouter = () => {
     out: { opacity: 0, y: -30, scale: 1.02 },
   };
 
+  let pageComponent;
+  switch (currentPage) {
+    case 'quiz':
+      pageComponent = <QuizPage key="quiz" config={quizConfig} onQuizEnd={handleQuizEnd} />;
+      break;
+    case 'stats':
+      pageComponent = <StatsPage key="stats" onBack={handleQuizEnd} />;
+      break;
+    case 'achievements':
+      pageComponent = <AchievementsPage key="achievements" onBack={handleQuizEnd} />;
+      break;
+    case 'settings':
+      pageComponent = <SettingsPage key="settings" onBack={handleQuizEnd} />;
+      break;
+    case 'menu':
+    default:
+      pageComponent = <MenuPage key="menu" onNavigate={handleNavigate} onStartQuiz={handleStartQuiz} />;
+  }
+
   return (
     <LayoutGroup>
       <AnimatePresence mode="wait">
-        <motion.div
-          key={currentPage}
-          initial="initial"
-          animate="in"
-          exit="out"
-          variants={pageVariants}
-          transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          style={{ width: '100%', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
-        >
-          {
-            {
-              'menu': <MenuPage onNavigate={setCurrentPage} onStartQuiz={startQuiz} />,
-              'quiz': <QuizPage config={quizConfig} onQuizEnd={() => setCurrentPage('menu')} />,
-              'stats': <StatsPage onBack={() => setCurrentPage('menu')} />,
-              'achievements': <AchievementsPage onBack={() => setCurrentPage('menu')} />,
-              'settings': <SettingsPage onBack={() => setCurrentPage('menu')} />
-            }[currentPage]
-          }
-        </motion.div>
+        {pageComponent}
       </AnimatePresence>
     </LayoutGroup>
   );

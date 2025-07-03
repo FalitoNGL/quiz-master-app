@@ -8,6 +8,7 @@ import { FiBarChart2, FiAward, FiSettings, FiBookOpen } from 'react-icons/fi';
 import { AuroraCard } from '../components/ui/AuroraCard';
 import { Button } from '../components/ui/Button';
 import { PageContainer } from '../components/ui/PageLayout';
+import { playSound } from '../utils/audioManager';
 
 const Header = styled.header`
   text-align: center;
@@ -42,10 +43,11 @@ const NavButton = styled(Button)`
   align-items: center;
   gap: 0.5rem;
   background: ${({ theme }) => theme.cardBg};
-  border: 1px solid ${({ theme }) => theme.accent};
+  border: 1px solid ${({ theme }) => `color-mix(in srgb, ${theme.accent} 50%, transparent)`};
 
   &:hover {
     background: ${({ theme }) => theme.accent};
+    border-color: ${({ theme }) => theme.accent};
   }
 `;
 
@@ -79,18 +81,19 @@ const CategoryDescription = styled.p`
   font-size: 1rem;
   margin-top: 0.5rem;
   flex-grow: 1;
+  min-height: 50px;
 `;
 
 const ModeSelector = styled.div`
   margin-top: 2rem;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  justify-content: center;
 `;
 
 const MenuPage = ({ onNavigate, onStartQuiz }) => {
   const { userName, wrongAnswers } = useUserProgress();
-  const clickSound = () => { if(navigator.vibrate) navigator.vibrate(50); new Audio('/sounds/click.mp3').play(); };
+  const clickSound = () => { if(navigator.vibrate) navigator.vibrate(50); playSound('click'); };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -132,8 +135,6 @@ const MenuPage = ({ onNavigate, onStartQuiz }) => {
                   <CategoryName>{category.name}</CategoryName>
                   <CategoryDescription>{category.description}</CategoryDescription>
                   <ModeSelector>
-                    {/* ================== PERBAIKAN DI SINI ================== */}
-                    {/* Tombol "Klasik" ditambahkan kembali */}
                     <Button onClick={() => { clickSound(); onStartQuiz(category.id, 'klasik') }}>Klasik</Button>
                     <Button onClick={() => { clickSound(); onStartQuiz(category.id, 'time_attack') }}>Time Attack</Button>
                   </ModeSelector>
@@ -148,10 +149,9 @@ const MenuPage = ({ onNavigate, onStartQuiz }) => {
               <IconWrapper style={{color: '#eab308'}}><FiBookOpen/></IconWrapper>
               <CategoryName>Latihan Personal</CategoryName>
               <CategoryDescription>Uji kembali soal-soal yang pernah Anda jawab salah.</CategoryDescription>
-              <ModeSelector>
-                {/* Tombol latihan dibuat menjadi satu dan terlihat */}
+              <ModeSelector style={{gridTemplateColumns: '1fr'}}>
                 <Button 
-                  style={{background: 'linear-gradient(145deg, #eab308, #a16207)', width: '100%'}} 
+                  style={{background: 'linear-gradient(145deg, #eab308, #a16207)'}} 
                   onClick={() => { clickSound(); onStartQuiz('wrong_answers', 'klasik') }}
                 >
                   Mulai Latihan

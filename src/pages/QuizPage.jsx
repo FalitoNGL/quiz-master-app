@@ -15,9 +15,10 @@ import { FocusOverlay } from '../components/ui/FocusOverlay';
 
 const QuizWrapper = styled(motion.div)`
   position: relative;
-  /* z-index tidak lagi diatur di sini, tapi pada elemen yang relevan */
   width: 100%;
   max-width: 48rem;
+  /* ================== PERBAIKAN LAYOUT DI SINI ================== */
+  margin: 0 auto; /* Tambahkan ini agar kartu kembali ke tengah */
 `;
 
 const QuizPage = ({ config, onQuizEnd }) => {
@@ -34,14 +35,12 @@ const QuizPage = ({ config, onQuizEnd }) => {
   const isFinishedRef = useRef(isFinished);
   useEffect(() => { isFinishedRef.current = isFinished; }, [isFinished]);
 
-  const sessionAnswersRef = useRef(sessionAnswers);
-  useEffect(() => { sessionAnswersRef.current = sessionAnswers; }, [sessionAnswers]);
+  // ================== LOGIKA INTI DITULIS ULANG TOTAL ==================
 
-  const finishQuiz = useCallback(() => {
+  const finishQuiz = useCallback((finalAnswers) => {
     if (isFinishedRef.current) return;
     setIsTimerRunning(false);
 
-    const finalAnswers = sessionAnswersRef.current;
     let calculatedScore = 0;
     questions.forEach((question, index) => {
       if (finalAnswers[index] === question.correct) calculatedScore += 10;
@@ -61,18 +60,9 @@ const QuizPage = ({ config, onQuizEnd }) => {
     setIsFinished(true);
   }, [questions, config, highScores, setHighScores, unlockAchievement]);
 
-  const advanceToNextQuestion = useCallback(() => {
-    setCurrentQuestionIndex(prevIndex => {
-      const isLastQuestion = prevIndex >= questions.length - 1;
-      if (isLastQuestion) {
-        finishQuiz();
-        return prevIndex;
-      }
-      return prevIndex + 1;
-    });
-  }, [questions.length, finishQuiz]);
 
   useEffect(() => {
+    // Setup kuis hanya berjalan saat config berubah
     let quizQuestions = [];
     if (config.categoryId === 'wrong_answers') {
       quizQuestions = wrongAnswers ? Object.values(wrongAnswers).flat() : [];
@@ -91,7 +81,20 @@ const QuizPage = ({ config, onQuizEnd }) => {
     setFinalScore(0);
     setIsFinished(false);
     setIsTimerRunning(true);
-  }, [config, wrongAnswers, onQuizEnd]);
+  }, [config, onQuizEnd]); // Hapus wrongAnswers agar tidak reset di tengah jalan
+
+  const advanceToNextQuestion = () => {
+    const isLastQuestion = currentQuestionIndex >= questions.length - 1;
+    if (isLastQuestion) {
+      // Gunakan functional update untuk memastikan kita punya state jawaban terakhir
+      setSessionAnswers(latestAnswers => {
+        finishQuiz(latestAnswers);
+        return latestAnswers;
+      });
+    } else {
+      setCurrentQuestionIndex(prevIndex => prevIndex + 1);
+    }
+  };
 
   const handleSelectOption = (optionIndex) => {
     if (sessionAnswers[currentQuestionIndex] !== undefined) return;
@@ -105,42 +108,40 @@ const QuizPage = ({ config, onQuizEnd }) => {
     if (config.categoryId !== 'wrong_answers') updateStats(isCorrect, isFirstQuestion);
     if (!isCorrect && config.categoryId !== 'wrong_answers') addWrongAnswer(config.categoryId, question);
     
-    setSessionAnswers(prevAnswers => {
-      const newAnswers = { ...prevAnswers, [currentQuestionIndex]: optionIndex };
-      if (config.mode === 'time_attack') {
-        setTimeout(() => {
-          advanceToNextQuestion();
-        }, 1200);
-      }
-      return newAnswers;
-    });
+    // Langsung update state, ini akan memicu re-render untuk feedback
+    setSessionAnswers(prevAnswers => ({
+      ...prevAnswers,
+      [currentQuestionIndex]: optionIndex
+    }));
   };
+  
+  // useEffect ini sekarang HANYA mengawasi jawaban & mode time attack
+  useEffect(() => {
+    const isCurrentQuestionAnswered = sessionAnswers[currentQuestionIndex] !== undefined;
+
+    if (isCurrentQuestionAnswered && config.mode === 'time_attack') {
+      const timer = setTimeout(() => {
+        advanceToNextQuestion();
+      }, 1200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [sessionAnswers, advanceToNextQuestion, config.mode, currentQuestionIndex]);
+
 
   if (questions.length === 0) return null;
   
   if (isFinished) {
-    return <Results
-      score={finalScore}
-      totalQuestions={questions.length}
-      onRestart={onQuizEnd}
-      highScore={highScores[`${config.categoryId}-${config.mode}`] || 0}
-      gameMode={config.mode}
-      isPracticeMode={config.categoryId === 'wrong_answers'}
-    />;
+    return <Results score={finalScore} totalQuestions={questions.length} onRestart={onQuizEnd} highScore={highScores[`${config.categoryId}-${config.mode}`] || 0} gameMode={config.mode} isPracticeMode={config.categoryId === 'wrong_answers'} />;
   }
   
   const isCurrentQuestionAnswered = sessionAnswers[currentQuestionIndex] !== undefined;
 
   return (
-    // ================== PERBAIKAN UTAMA DI SINI ==================
-    // QuizWrapper sekarang menjadi elemen terluar, bukan Fragment <>
     <QuizWrapper layoutId={`quiz-card-${config.categoryId}`}>
       <AnimatePresence>
         {isFocusMode && <FocusOverlay onClick={() => setIsFocusMode(false)} />}
       </AnimatePresence>
-      
-      {/* Seluruh isi kuis sekarang ada di dalam QuestionCard */}
-      {/* zIndex diatur di sini untuk mengangkat kartu di atas overlay */}
       <div style={{ position: 'relative', zIndex: isFocusMode ? 50 : 1 }}>
         <QuestionCard
             key={currentQuestionIndex}
@@ -152,7 +153,7 @@ const QuizPage = ({ config, onQuizEnd }) => {
             gameMode={config.mode}
             isFocusMode={isFocusMode}
             toggleFocusMode={() => setIsFocusMode(p => !p)}
-            timer={<Timer isRunning={isTimerRunning} mode={config.mode} duration={120} onTimeUp={finishQuiz} config={config} />}
+            timer={<Timer isRunning={isTimerRunning} mode={config.mode} duration={120} onTimeUp={() => finishQuiz(sessionAnswers)} config={config} />}
             progressBar={<ProgressBar current={currentQuestionIndex + 1} total={questions.length} />}
         />
       </div>
