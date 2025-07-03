@@ -1,3 +1,5 @@
+// src/context/UserProgressContext.jsx
+
 import { createContext, useContext } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { achievementsList } from '../data/achievements';
@@ -18,6 +20,7 @@ export const UserProgressProvider = ({ children }) => {
     themeMode: 'dark',
     accentColor: null,
     fontSize: 'medium',
+    backgroundEffect: 'aurora', // Defaultnya sekarang efek baru yang keren
   });
 
   const updateStats = (isCorrect, isFirstQuestion) => {

@@ -1,10 +1,10 @@
-// src/pages/SettingsPage.jsx
+// GANTI SELURUH FILE SettingsPage.jsx DENGAN INI:
 
 import { useState } from 'react';
 import { useUserProgress } from '../context/UserProgressContext';
 import styled from 'styled-components';
 import { themes } from '../App';
-import { FiUser, FiSun, FiMoon, FiCheck, FiType, FiDroplet, FiRefreshCw } from 'react-icons/fi';
+import { FiUser, FiSun, FiMoon, FiCheck, FiType, FiDroplet, FiRefreshCw, FiStar } from 'react-icons/fi';
 import { PageContainer, PageHeader, PageBackButton } from '../components/ui/PageLayout';
 import { Button } from '../components/ui/Button';
 import { AuroraCard } from '../components/ui/AuroraCard';
@@ -55,7 +55,6 @@ const OptionButton = styled(Button)`
   border: 1px solid ${({ theme, $isActive }) => ($isActive ? theme.accent : theme.textSecondary)};
   color: ${({ theme, $isActive }) => ($isActive ? theme.buttonText : theme.text)};
   box-shadow: none;
-
   &:hover {
     border-color: ${({ theme }) => theme.accent};
     transform: none;
@@ -69,7 +68,6 @@ const ThemeGrid = styled.div`
   gap: 1rem;
 `;
 
-// ================== PERBAIKAN 1: GUNAKAN $themeOption ==================
 const ThemeCard = styled.div`
   border: 2px solid ${({ theme, $isActive }) => ($isActive ? theme.accent : 'transparent')};
   border-radius: 12px;
@@ -78,24 +76,10 @@ const ThemeCard = styled.div`
   cursor: pointer;
   position: relative;
   transition: all 0.2s;
-  
   &:hover { transform: scale(1.05); }
-
-  .theme-name {
-    color: ${({ $themeOption }) => $themeOption.dark.text};
-    font-weight: 600;
-  }
-  .theme-accents {
-    display: flex;
-    margin-top: 0.5rem;
-    gap: 0.25rem;
-  }
-  .theme-accent {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 2px solid ${({ $themeOption }) => $themeOption.dark.bg};
-  }
+  .theme-name { color: ${({ $themeOption }) => $themeOption.dark.text}; font-weight: 600; }
+  .theme-accents { display: flex; margin-top: 0.5rem; gap: 0.25rem; }
+  .theme-accent { width: 20px; height: 20px; border-radius: 50%; border: 2px solid ${({ $themeOption }) => $themeOption.dark.bg}; }
 `;
 
 const ColorGrid = styled.div`
@@ -126,20 +110,13 @@ const SettingsPage = ({ onBack }) => {
   const { userName, setUserName, settings, setSettings } = useUserProgress();
   const [currentName, setCurrentName] = useState(userName);
 
-  const handleSaveName = () => {
-    if (currentName.trim()) {
-      setUserName(currentName.trim());
-      alert('Nama berhasil disimpan!');
-    }
-  };
-
+  const handleSaveName = () => { if (currentName.trim()) { setUserName(currentName.trim()); alert('Nama berhasil disimpan!'); } };
   const setFontSize = (size) => setSettings(p => ({ ...p, fontSize: size }));
   const setThemeMode = (mode) => setSettings(p => ({ ...p, themeMode: mode }));
-  const setThemeFamily = (family) => {
-    setSettings(p => ({ ...p, themeFamily: family, accentColor: null }));
-  };
+  const setThemeFamily = (family) => { setSettings(p => ({ ...p, themeFamily: family, accentColor: null })); };
   const setAccentColor = (color) => setSettings(p => ({ ...p, accentColor: color }));
   const resetAccentColor = () => setSettings(p => ({ ...p, accentColor: null }));
+  const setBackgroundEffect = (effect) => setSettings(p => ({...p, backgroundEffect: effect}));
 
   return (
     <PageContainer>
@@ -172,13 +149,7 @@ const SettingsPage = ({ onBack }) => {
           <label>1. Pilih Keluarga Tema</label>
           <ThemeGrid>
             {Object.entries(themes).map(([key, themeFamily]) => (
-              // ================== PERBAIKAN 2: KIRIM PROP DENGAN $ ==================
-              <ThemeCard 
-                key={key} 
-                $themeOption={themeFamily}
-                $isActive={settings.themeFamily === key}
-                onClick={() => setThemeFamily(key)}
-              >
+              <ThemeCard key={key} $themeOption={themeFamily} $isActive={settings.themeFamily === key} onClick={() => setThemeFamily(key)}>
                 <div className="theme-name">{themeFamily.name}</div>
                 <div className="theme-accents">
                   <div className="theme-accent" style={{ background: themeFamily.light.accent }}></div>
@@ -189,7 +160,6 @@ const SettingsPage = ({ onBack }) => {
             ))}
           </ThemeGrid>
         </ControlGroup>
-
         <ControlGroup>
           <label>2. Pilih Mode Tampilan</label>
           <ButtonGroup>
@@ -197,17 +167,11 @@ const SettingsPage = ({ onBack }) => {
             <OptionButton $isActive={settings.themeMode === 'dark'} onClick={() => setThemeMode('dark')}><FiMoon/> Gelap</OptionButton>
           </ButtonGroup>
         </ControlGroup>
-        
         <ControlGroup>
           <label>3. Ganti Warna Aksen (Opsional)</label>
           <ColorGrid>
             {accentColors.map(color => (
-              <ColorSwatch 
-                key={color} 
-                color={color} 
-                $isActive={settings.accentColor === color}
-                onClick={() => setAccentColor(color)}
-              >
+              <ColorSwatch key={color} color={color} $isActive={settings.accentColor === color} onClick={() => setAccentColor(color)}>
                 {settings.accentColor === color && <FiCheck />}
               </ColorSwatch>
             ))}
@@ -215,6 +179,18 @@ const SettingsPage = ({ onBack }) => {
           </ColorGrid>
         </ControlGroup>
       </SettingsSection>
+      
+      <SettingsSection>
+        <h2><FiStar /> Efek Latar Belakang</h2>
+        <ButtonGroup>
+          <OptionButton $isActive={settings.backgroundEffect === 'minimalis'} onClick={() => setBackgroundEffect('minimalis')}>Minimalis</OptionButton>
+          <OptionButton $isActive={settings.backgroundEffect === 'jaringan'} onClick={() => setBackgroundEffect('jaringan')}>Jaringan</OptionButton>
+          <OptionButton $isActive={settings.backgroundEffect === 'nebula'} onClick={() => setBackgroundEffect('nebula')}>Nebula</OptionButton>
+          <OptionButton $isActive={settings.backgroundEffect === 'gelembung'} onClick={() => setBackgroundEffect('gelembung')}>Gelembung</OptionButton>
+          <OptionButton $isActive={settings.backgroundEffect === 'aurora'} onClick={() => setBackgroundEffect('aurora')}>Aurora</OptionButton>
+        </ButtonGroup>
+      </SettingsSection>
+
     </PageContainer>
   );
 };
